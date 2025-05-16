@@ -3,36 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hypothetical Global Oscillator Synchronization Model</title>
+    <title>Global Oscillator Synchronization Model</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000005; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .panel { position: absolute; background: rgba(10, 0, 30, 0.9); padding: 15px 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(120, 100, 255, 0.5); border: 1px solid rgba(120, 100, 255, 0.3); z-index: 10; }
-        #info { top: 15px; left: 15px; font-size: 15px; max-width: 320px; }
-        #info h2 { margin-top: 0; color: #99eeff; }
-        #info p { margin: 8px 0; }
-        #resonanceStatus { font-style: normal; color: #bbf0dd; margin-top: 10px; min-height: 3.5em; font-size: 0.95em; }
-        #controls { top: 15px; right: 15px; }
-        #controls label { display: block; margin: 12px 0; font-size: 14px; }
-        #controls input[type="range"] { width: 180px; cursor: pointer; margin-left: 5px; vertical-align: middle; }
-        #controls button { margin-top: 15px; padding: 10px 18px; background: linear-gradient(45deg, #00ffdd, #00aaff); border: none; border-radius: 5px; color: #000; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
-        #controls button:hover { background: linear-gradient(45deg, #00eecb, #0088ee); box-shadow: 0 0 10px #00ffdd; }
-        canvas { display: block; }
+        :root {
+            --bg-color: #000005;
+            --panel-bg: rgba(20, 10, 50, 0.8);
+            --accent-color: #00ccff;
+            --text-color: #e0e0e0;
+            --glow-color: rgba(120, 100, 255, 0.5);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .panel {
+            position: absolute;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glow-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            opacity: 0.95;
+        }
+
+        #info {
+            top: 20px;
+            left: 20px;
+            max-width: 350px;
+            font-size: 14px;
+        }
+
+        #info h2 {
+            margin: 0 0 10px;
+            color: var(--accent-color);
+        }
+
+        #info p {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        #resonanceStatus {
+            color: #bbf0dd;
+            margin-top: 10px;
+            min-height: 3.5em;
+            font-size: 0.95em;
+        }
+
+        #controls {
+            top: 20px;
+            right: 20px;
+            max-width: 250px;
+        }
+
+        #controls label {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        #controls input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+        }
+
+        #controls button, #themeToggle, #pauseButton {
+            margin: 10px 0;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, var(--accent-color), #ff00cc);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #controls button:hover, #themeToggle:hover, #pauseButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--accent-color);
+        }
 
         #introOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,10,0.92); z-index: 100;
-            display: flex; justify-content: center; align-items: center; text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 10, 0.95);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
+
         #introContent {
-            background: rgba(20,10,50,0.96); padding: 30px; border-radius: 15px;
-            max-width: 650px; color: #e0e0e0; border: 1px solid #5577ff;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 700px;
+            border: 1px solid var(--accent-color);
         }
-        #introContent h1 { color: #88ddff; margin-bottom: 20px;}
-        #introContent p { line-height: 1.6; margin-bottom: 15px; font-size: 0.95em;}
-        #introContent strong { color: #aadeff; }
-        #introContent button {
-            margin-top: 20px; padding: 12px 25px; background: #00ccaa; color: #000;
-            border: none; border-radius: 5px; font-size: 16px; cursor: pointer;
+
+        #introContent h1 {
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        #introContent p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+
+        #introContent strong {
+            color: #aadeff;
+        }
+
+        #analyticsChart {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            height: 150px;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        canvas {
+            display: block;
         }
     </style>
 </head>
@@ -40,429 +156,718 @@
     <div id="introOverlay">
         <div id="introContent">
             <h1>Global Oscillator Synchronization Model</h1>
-            <p>This visualization models a <strong>hypothetical scenario</strong> where a population of oscillators (representing simplified "minds" with intrinsic frequencies in the Theta/Alpha brainwave range, ~4-8Hz) are coupled to each other and to an external pacer (Earth's Schumann Resonance, ~7.83Hz).</p>
-            <p>The simulation employs the <strong>Kuramoto model</strong> to explore emergent synchronization phenomena. Observe how individual oscillators adjust their phase and how collective coherence (measured by the order parameter 'r') develops under varying coupling strengths and population sizes.</p>
-            <p>Explore the parameters to observe the emergent patterns and dynamics of this <strong>conceptual model</strong>.</p>
+            <p>This visualization models a <strong>hypothetical scenario</strong> where oscillators (representing simplified "minds" with Theta/Alpha brainwave frequencies, ~4-8Hz) couple with each other and an external pacer (Earth's Schumann Resonance, ~7.83Hz).</p>
+            <p>Using the <strong>Kuramoto model</strong>, explore emergent synchronization phenomena. Adjust parameters to observe collective coherence (order parameter 'r') and dynamic patterns.</p>
             <button id="startExperienceButton">Run Simulation with Audio</button>
         </div>
     </div>
 
-    <div id="info" class="panel">
+    <div id="info" class="panel" role="region" aria-label="Simulation Information">
         <h2>Oscillator Network Dynamics</h2>
         <p>Internal Oscillators: 4–8 Hz (Theta/Alpha range).<br>External Pacer (Earth): ~7.83 Hz.</p>
         <p>Order Parameter (r): <span id="orderParameter">0.000</span></p>
         <div id="resonanceStatus">Initializing System...</div>
     </div>
-    <div id="controls" class="panel">
-        <label>Coupling (K): <span id="couplingValue">2.0</span> <input type="range" id="coupling" min="0" max="10" step="0.1" value="2"></label>
-        <label>Oscillators (N): <span id="numBrainsValue">300</span> <input type="range" id="numBrains" min="50" max="700" step="25" value="300"></label>
-        <label>Sim Speed: <span id="simSpeedValue">0.3</span> <input type="range" id="simSpeed" min="0.05" max="1" step="0.05" value="0.3"></label>
-        <label>Pacer Bal. (E↔C): <span id="alphaCouplingValue">0.5</span> <input type="range" id="alphaCoupling" min="0" max="1" step="0.05" value="0.5"></label>
-        <label>Volume: <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.3"></label>
+
+    <div id="controls" class="panel" role="region" aria-label="Simulation Controls">
+        <label for="coupling">Coupling (K): <span id="couplingValue">2.0</span></label>
+        <input type="range" id="coupling" min="0" max="10" step="0.1" value="2" aria-valuemin="0" aria-valuemax="10" aria-valuenow="2">
+        <label for="numBrains">Oscillators (N): <span id="numBrainsValue">300</span></label>
+        <input type="range" id="numBrains" min="50" max="700" step="25" value="300" aria-valuemin="50" aria-valuemax="700" aria-valuenow="300">
+        <label for="simSpeed">Sim Speed: <span id="simSpeedValue">0.3</span></label>
+        <input type="range" id="simSpeed" min="0.05" max="1" step="0.05" value="0.3" aria-valuemin="0.05" aria-valuemax="1" aria-valuenow="0.3">
+        <label for="alphaCoupling">Pacer Bal. (E↔C): <span id="alphaCouplingValue">0.5</span></label>
+        <input type="range" id="alphaCoupling" min="0" max="1" step="0.05" value="0.5" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.5">
+        <label for="masterVolume">Volume: <span id="volumeValue">0.3</span></label>
+        <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.3" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.3">
+        <button id="pauseButton">Pause</button>
         <button id="resetButton">Reset Simulation</button>
+        <button id="themeToggle">Toggle Theme</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <canvas id="analyticsChart"></canvas>
 
-    <script>
-        // --- Audio Setup ---
-        let audioCtx;
-        let masterGain;
-        let droneOsc, droneLFO, droneGain, droneLFOGain;
-        let pentatonicFrequencies = [];
-        let lastChimeTime = 0;
-        const CHIME_COOLDOWN = 300; // milliseconds
-        let lastRNormalizedForChime = 0;
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+        import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/controls/OrbitControls.js';
+        import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/postprocessing/ShaderPass.js';
+        import { Chart } from 'https://cdn.jsdelivr.net/npm/chart.js';
+        import tippy from 'https://unpkg.com/tippy.js@6';
 
-        function initAudio() {
-            if (audioCtx) return; // Already initialized
-
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (!audioCtx) {
-                console.warn("Web Audio API not supported in this browser.");
-                return;
+        class OscillatorSimulation {
+            constructor() {
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x050010, 0.05);
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+                this.composer = null;
+                this.controls = null;
+                this.audioCtx = null;
+                this.masterGain = null;
+                this.droneOsc = null;
+                this.droneGain = null;
+                this.droneLFO = null;
+                this.droneLFOGain = null;
+                this.pentatonicFrequencies = [];
+                this.lastChimeTime = 0;
+                this.CHIME_COOLDOWN = 300;
+                this.lastRNormalizedForChime = 0;
+                this.EARTH_RADIUS = 5;
+                this.AURA_RADIUS_FACTOR = 1.08;
+                this.F_E = 7.83;
+                this.OMEGA_E = 2 * Math.PI * this.F_E;
+                this.MIN_R_ORDER_FOR_CONNECTIONS = 0.25;
+                this.CONNECTION_PHASE_THRESHOLD = Math.PI / 8;
+                this.MAX_CONNECTIONS_TO_DISPLAY = 2500;
+                this.EARTH_BASE_ROTATION_SPEED = 0.00015;
+                this.N = 300;
+                this.K = 2.0;
+                this.SIMULATION_SPEED = 0.3;
+                this.ALPHA_COUPLING = 0.5;
+                this.r_order = 0;
+                this.totalTime = 0;
+                this.animationPaused = true;
+                this.phases = [];
+                this.intrinsicFrequencies = [];
+                this.particleEnergy = [];
+                this.frame_lastTime = 0;
+                this.orderChart = null;
             }
 
-            masterGain = audioCtx.createGain();
-            masterGain.gain.value = parseFloat(document.getElementById('masterVolume').value); // Initial volume
-            masterGain.connect(audioCtx.destination);
+            async initAudio() {
+                try {
+                    this.audioCtx = new AudioContext();
+                    this.masterGain = this.audioCtx.createGain();
+                    this.masterGain.gain.value = parseFloat(document.getElementById('masterVolume').value);
+                    this.masterGain.connect(this.audioCtx.destination);
 
-            // Drone setup
-            droneOsc = audioCtx.createOscillator();
-            droneGain = audioCtx.createGain(); // Main gain for the drone's audible tone
-            droneLFO = audioCtx.createOscillator();
-            droneLFOGain = audioCtx.createGain(); // Gain controlled by LFO, then modulates droneGain
+                    const filter = this.audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1000, this.audioCtx.currentTime);
 
-            droneOsc.type = 'sine'; // Soft audible tone
-            droneOsc.frequency.setValueAtTime(7.83 * 8, audioCtx.currentTime); // Audible harmonic (approx 62.64 Hz)
-            droneGain.gain.value = 0; // Start silent, will be modulated
+                    this.droneOsc = this.audioCtx.createOscillator();
+                    this.droneGain = this.audioCtx.createGain();
+                    this.droneLFO = this.audioCtx.createOscillator();
+                    this.droneLFOGain = this.audioCtx.createGain();
 
-            droneLFO.type = 'sine';
-            droneLFO.frequency.setValueAtTime(F_E, audioCtx.currentTime); // Schumann frequency for pulsing
-            
-            droneOsc.connect(droneGain);
-            droneGain.connect(masterGain);
-            
-            droneLFO.connect(droneLFOGain); // LFO output to control the gain amount
-            droneLFOGain.connect(droneGain.gain); // LFO's gain signal modulates the audible drone's gain (AM)
+                    this.droneOsc.type = 'sine';
+                    this.droneOsc.frequency.setValueAtTime(this.F_E * 8, this.audioCtx.currentTime);
+                    this.droneGain.gain.value = 0;
 
-            droneLFOGain.gain.value = 0.0; // Depth of LFO modulation, starts low
+                    this.droneLFO.type = 'sine';
+                    this.droneLFO.frequency.setValueAtTime(this.F_E, this.audioCtx.currentTime);
 
-            droneOsc.start();
-            droneLFO.start();
+                    this.droneOsc.connect(this.droneGain);
+                    this.droneGain.connect(filter);
+                    filter.connect(this.masterGain);
+                    this.droneLFO.connect(this.droneLFOGain);
+                    this.droneLFOGain.connect(this.droneGain.gain);
 
-            // Pentatonic Scale (C Major Pentatonic starting C4)
-            const rootFreq = 261.63; // C4
-            const intervals = [0, 2, 4, 7, 9, 12, 14]; // Semitones for C, D, E, G, A, C5, D5
-            pentatonicFrequencies = intervals.map(interval => rootFreq * Math.pow(2, interval / 12));
-        }
+                    this.droneLFOGain.gain.value = 0.0;
+                    this.droneOsc.start();
+                    this.droneLFO.start();
 
-        function playPentatonicChime() {
-            if (!audioCtx || audioCtx.currentTime - lastChimeTime < CHIME_COOLDOWN / 1000) {
-                return;
+                    const rootFreq = 261.63;
+                    const intervals = [0, 2, 4, 7, 9, 12, 14];
+                    this.pentatonicFrequencies = intervals.map(interval => rootFreq * Math.pow(2, interval / 12));
+                } catch (e) {
+                    console.error('Audio initialization failed:', e);
+                    document.getElementById('resonanceStatus').textContent = 'Audio unavailable. Simulation running without sound.';
+                }
             }
-            lastChimeTime = audioCtx.currentTime;
 
-            const freqIndex = Math.floor(Math.random() * pentatonicFrequencies.length);
-            const frequency = pentatonicFrequencies[freqIndex];
+            playPentatonicChime() {
+                if (!this.audioCtx || this.audioCtx.currentTime - this.lastChimeTime < this.CHIME_COOLDOWN / 1000) return;
+                this.lastChimeTime = this.audioCtx.currentTime;
 
-            const chimeOsc = audioCtx.createOscillator();
-            const chimeGain = audioCtx.createGain();
+                const freqIndex = Math.floor(Math.random() * this.pentatonicFrequencies.length);
+                const frequency = this.pentatonicFrequencies[freqIndex];
 
-            chimeOsc.type = 'triangle'; // Softer than sine for chimes
-            chimeOsc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-            
-            chimeGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            chimeGain.gain.linearRampToValueAtTime(0.4 * (0.2 + r_order * 0.8), audioCtx.currentTime + 0.05); // Quick attack, volume based on r_order
-            chimeGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2 + r_order); // Decay based on r_order
+                const chimeOsc = this.audioCtx.createOscillator();
+                const chimeGain = this.audioCtx.createGain();
 
-            chimeOsc.connect(chimeGain).connect(masterGain);
-            chimeOsc.start(audioCtx.currentTime);
-            chimeOsc.stop(audioCtx.currentTime + 1.5 + r_order);
-        }
+                chimeOsc.type = 'triangle';
+                chimeOsc.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
+                chimeGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+                chimeGain.gain.linearRampToValueAtTime(0.4 * (0.2 + this.r_order * 0.8), this.audioCtx.currentTime + 0.05);
+                chimeGain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + 1.2 + this.r_order);
 
-        function updateAudio() {
-            if (!audioCtx) return;
-
-            const targetDroneGain = 0.01 + r_order * 0.15; // Base volume for drone
-            droneGain.gain.setTargetAtTime(targetDroneGain, audioCtx.currentTime, 0.1);
-            
-            const targetLFODepth = 0.05 + r_order * 0.4; // How much the LFO affects the volume
-            droneLFOGain.gain.setTargetAtTime(targetLFODepth * targetDroneGain, audioCtx.currentTime, 0.1); // LFO depth also scaled by overall drone gain
-
-            // Trigger chimes when r_order crosses new "tenths" thresholds
-            const currentRNormalized = Math.floor(r_order * 10);
-            if (currentRNormalized > lastRNormalizedForChime && r_order > 0.2) {
-                playPentatonicChime();
-                lastRNormalizedForChime = currentRNormalized;
-            } else if (r_order < 0.1) { // Reset if order drops low
-                 lastRNormalizedForChime = 0;
+                chimeOsc.connect(chimeGain).connect(this.masterGain);
+                chimeOsc.start(this.audioCtx.currentTime);
+                chimeOsc.stop(this.audioCtx.currentTime + 1.5 + this.r_order);
             }
-        }
 
+            updateAudio() {
+                if (!this.audioCtx) return;
+                const targetDroneGain = 0.01 + this.r_order * 0.15;
+                this.droneGain.gain.setTargetAtTime(targetDroneGain, this.audioCtx.currentTime, 0.1);
+                const targetLFODepth = 0.05 + this.r_order * 0.4;
+                this.droneLFOGain.gain.setTargetAtTime(targetLFODepth * targetDroneGain, this.audioCtx.currentTime, 0.1);
 
-        // --- Scene Setup, Lighting, Post-processing, Constants (mostly unchanged from previous) ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050010, 0.05);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
-
-        const ambientLight = new THREE.AmbientLight(0x706090, 0.7);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
-        directionalLight.position.set(5, 10, 7);
-        scene.add(directionalLight);
-
-        const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.6, 0.5);
-        bloomPass.threshold = 0.5; bloomPass.strength = 0.9; bloomPass.radius = 0.6;
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-        
-        const EARTH_RADIUS = 5;
-        const AURA_RADIUS_FACTOR = 1.08;
-        const F_E = 7.83; 
-        const OMEGA_E = 2 * Math.PI * F_E;
-        const MIN_R_ORDER_FOR_CONNECTIONS = 0.25;
-        const CONNECTION_PHASE_THRESHOLD = Math.PI / 8;
-        const MAX_CONNECTIONS_TO_DISPLAY = 2500;
-        const EARTH_BASE_ROTATION_SPEED = 0.00015; 
-
-        let earth, aura, particleSystem, resonancePlane, lineConnectionSystem;
-        let particlesGeometry, particleMaterial;
-        let lineGeometry, lineMaterial;
-        let positions, colors, phases = [], intrinsicFrequencies = [], particleEnergy = [];
-        
-        let N = 300;
-        let K = 2.0;
-        let SIMULATION_SPEED = 0.3;
-        let ALPHA_COUPLING = 0.5;
-        let r_order = 0;
-        let totalTime = 0;
-        let animationPaused = true;
-
-        function initEarth() {
-            if (earth) scene.remove(earth);
-            const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 48, 48);
-            const earthMaterial = new THREE.MeshStandardMaterial({
-                color: 0x204080, wireframe: true, transparent: true,
-                opacity: 0.12, 
-                emissive: 0x102040, emissiveIntensity: 0.4,
-                roughness: 0.8, metalness: 0.2
-            });
-            earth = new THREE.Mesh(earthGeometry, earthMaterial);
-            scene.add(earth);
-        }
-
-        function initAura() {
-            if (aura) scene.remove(aura);
-            const auraGeometry = new THREE.SphereGeometry(EARTH_RADIUS * AURA_RADIUS_FACTOR, 64, 64);
-            const auraMaterial = new THREE.MeshStandardMaterial({
-                color: 0x00aaff, transparent: true, opacity: 0.05,
-                emissive: 0x00ccff, emissiveIntensity: 0.3,
-                wireframe: true, depthWrite: false, blending: THREE.AdditiveBlending
-            });
-            aura = new THREE.Mesh(auraGeometry, auraMaterial);
-            scene.add(aura);
-        }
-
-        function initParticles() {
-            if (particleSystem) scene.remove(particleSystem);
-            if (particlesGeometry) particlesGeometry.dispose();
-            if (particleMaterial) particleMaterial.dispose();
-
-            particlesGeometry = new THREE.BufferGeometry();
-            const particlePositionsArray = new Float32Array(N * 3);
-            const particleColorsArray = new Float32Array(N * 3);
-            const particleSizesArray = new Float32Array(N); 
-
-            phases = []; intrinsicFrequencies = []; particleEnergy = [];
-
-            for (let i = 0; i < N; i++) {
-                const theta = Math.random() * 2 * Math.PI;
-                const phi = Math.acos(2 * Math.random() - 1);
-                const r_particle = (0.2 + Math.random() * 0.7) * EARTH_RADIUS;
-                particlePositionsArray[i * 3] = r_particle * Math.sin(phi) * Math.cos(theta);
-                particlePositionsArray[i * 3 + 1] = r_particle * Math.sin(phi) * Math.sin(theta);
-                particlePositionsArray[i * 3 + 2] = r_particle * Math.cos(phi);
-                particleColorsArray[i * 3] = 0.5; particleColorsArray[i * 3 + 1] = 0.2; particleColorsArray[i * 3 + 2] = 0.8;
-                phases.push(Math.random() * 2 * Math.PI);
-                intrinsicFrequencies.push(4 + Math.random() * 4);
-                particleEnergy.push(Math.random());
-                particleSizesArray[i] = 0.1 + Math.random() * 0.08;
+                const currentRNormalized = Math.floor(this.r_order * 10);
+                if (currentRNormalized > this.lastRNormalizedForChime && this.r_order > 0.2) {
+                    this.playPentatonicChime();
+                    this.lastRNormalizedForChime = currentRNormalized;
+                } else if (this.r_order < 0.1) {
+                    this.lastRNormalizedForChime = 0;
+                }
             }
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositionsArray, 3));
-            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(particleColorsArray, 3));
-            particlesGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizesArray, 1));
 
-            particleMaterial = new THREE.ShaderMaterial({
-                uniforms: { time: { value: 0.0 }, globalOrder: { value: 0.0 } },
-                vertexShader: `attribute float size; varying vec3 vColor; uniform float globalOrder; void main() { vColor = color; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_PointSize = size * (1.0 + globalOrder * 1.5) * (200.0 / -mvPosition.z); gl_Position = projectionMatrix * mvPosition; }`,
-                fragmentShader: `varying vec3 vColor; uniform float time; void main() { float alpha = 0.55 + 0.45 * sin(time * 12.0 + gl_FragCoord.x * 0.15 + gl_FragCoord.y * 0.05); if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.47) discard; gl_FragColor = vec4(vColor, alpha); }`,
-                transparent: true, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending
-            });
-            particleSystem = new THREE.Points(particlesGeometry, particleMaterial);
-            scene.add(particleSystem);
-        }
-        
-        function initResonancePlane() {
-            if (resonancePlane) scene.remove(resonancePlane);
-            const planeGeometry = new THREE.PlaneGeometry(EARTH_RADIUS * 3.5, EARTH_RADIUS * 3.5, 48, 48);
-            const planeMaterial = new THREE.ShaderMaterial({
-                uniforms: { time: { value: 0.0 }, orderParameter: { value: 0.0 }, baseColor: { value: new THREE.Color(0x55aaff) }, glowColor: { value: new THREE.Color(0xaadeff) } },
-                vertexShader: `varying vec2 vUv; uniform float time; uniform float orderParameter; void main() { vUv = uv; vec3 pos = position; float dist = length(pos.xy); float wave1 = sin(dist * 3.0 - time * 2.5 + orderParameter * 7.0) * 0.2 * orderParameter; float wave2 = cos(dist * 5.0 + time * 1.5 - orderParameter * 4.0) * 0.15 * orderParameter; pos.z += (wave1 + wave2) * (1.0 - smoothstep(0.0, 8.0, dist)); gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
-                fragmentShader: `varying vec2 vUv; uniform float time; uniform float orderParameter; uniform vec3 baseColor; uniform vec3 glowColor; void main() { float op = max(0.0, orderParameter - 0.1) * 3.0; float pattern = 0.4 + 0.6 * sin(vUv.x * 30.0 + vUv.y*5.0 + time*2.0 + orderParameter * 15.0); pattern *= (0.4 + 0.6 * cos(vUv.y * 25.0 - time*1.5 + orderParameter * 10.0)); op = clamp(op * pattern, 0.0, 0.8); float edgeFactor = 1.0 - smoothstep(0.30, 0.5, length(vUv - 0.5)); op *= edgeFactor; vec3 color = mix(baseColor, glowColor, smoothstep(0.15, 0.75, orderParameter)); gl_FragColor = vec4(color, op); }`,
-                side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
-            });
-            resonancePlane = new THREE.Mesh(planeGeometry, planeMaterial);
-            resonancePlane.rotation.x = Math.PI / 2; resonancePlane.position.y = -EARTH_RADIUS * 0.05;
-            scene.add(resonancePlane);
-        }
+            initScene() {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                document.body.appendChild(this.renderer.domElement);
 
-        function initLineConnections() {
-            if (lineConnectionSystem) scene.remove(lineConnectionSystem);
-            if (lineGeometry) lineGeometry.dispose(); if (lineMaterial) lineMaterial.dispose();
-            lineGeometry = new THREE.BufferGeometry();
-            lineMaterial = new THREE.LineBasicMaterial({ color: 0x99bbff, transparent: true, opacity: 0, linewidth: 1, blending: THREE.AdditiveBlending, depthWrite: false });
-            lineConnectionSystem = new THREE.LineSegments(lineGeometry, lineMaterial);
-            scene.add(lineConnectionSystem);
-        }
+                const ambientLight = new THREE.AmbientLight(0x706090, 0.8);
+                this.scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                directionalLight.position.set(5, 10, 7);
+                this.scene.add(directionalLight);
 
-        camera.position.set(0, EARTH_RADIUS * 0.3, EARTH_RADIUS * 2.8); camera.lookAt(0, 0, 0);
+                const renderPass = new RenderPass(this.scene, this.camera);
+                const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.6, 0.5);
+                bloomPass.threshold = 0.4;
+                bloomPass.strength = 0.8;
+                bloomPass.radius = 0.5;
 
-        // --- UI Controls & Event Listeners ---
-        const couplingSlider = document.getElementById('coupling');
-        const numBrainsSlider = document.getElementById('numBrains');
-        const simSpeedSlider = document.getElementById('simSpeed');
-        const alphaCouplingSlider = document.getElementById('alphaCoupling');
-        const masterVolumeSlider = document.getElementById('masterVolume'); // Volume slider
-        const resetButton = document.getElementById('resetButton'); 
-        const startExperienceButton = document.getElementById('startExperienceButton');
-        const introOverlay = document.getElementById('introOverlay');
-        const couplingValueSpan = document.getElementById('couplingValue');
-        const numBrainsValueSpan = document.getElementById('numBrainsValue');
-        const simSpeedValueSpan = document.getElementById('simSpeedValue');
-        const alphaCouplingValueSpan = document.getElementById('alphaCouplingValue');
-        const resonanceStatusEl = document.getElementById('resonanceStatus');
+                const vignettePass = new ShaderPass({
+                    uniforms: {
+                        tDiffuse: { value: null },
+                        offset: { value: 1.0 },
+                        darkness: { value: 1.0 }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        void main() {
+                            vUv = uv;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform sampler2D tDiffuse;
+                        uniform float offset;
+                        uniform float darkness;
+                        varying vec2 vUv;
+                        void main() {
+                            vec4 color = texture2D(tDiffuse, vUv);
+                            float dist = distance(vUv, vec2(0.5));
+                            color.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
+                            gl_FragColor = color;
+                        }
+                    `
+                });
 
-        couplingSlider.addEventListener('input', (e) => { K = parseFloat(e.target.value); couplingValueSpan.textContent = K.toFixed(1); });
-        numBrainsSlider.addEventListener('input', (e) => { N = parseInt(e.target.value); numBrainsValueSpan.textContent = N; if (N > 0 && !animationPaused) { initParticles(); updateConnections(); } });
-        simSpeedSlider.addEventListener('input', (e) => { SIMULATION_SPEED = parseFloat(e.target.value); simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); });
-        alphaCouplingSlider.addEventListener('input', (e) => { ALPHA_COUPLING = parseFloat(e.target.value); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2); });
-        masterVolumeSlider.addEventListener('input', (e) => { if (masterGain) masterGain.gain.value = parseFloat(e.target.value); });
-        
-        startExperienceButton.addEventListener('click', () => {
-            initAudio(); // Initialize AudioContext on first user gesture
-            introOverlay.style.display = 'none'; animationPaused = false;
-            if (N > 0) initParticles(); updateConnections(); animate(0);
-        });
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(renderPass);
+                this.composer.addPass(bloomPass);
+                this.composer.addPass(vignettePass);
 
-        function resetSimulation() {
-            K = 2.0; N = parseInt(numBrainsSlider.value); SIMULATION_SPEED = 0.3; ALPHA_COUPLING = 0.5;
-            couplingSlider.value = K; simSpeedSlider.value = SIMULATION_SPEED; alphaCouplingSlider.value = ALPHA_COUPLING;
-            couplingValueSpan.textContent = K.toFixed(1); simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2);
-            totalTime = 0; r_order = 0; lastRNormalizedForChime = 0;
-            document.getElementById('orderParameter').textContent = r_order.toFixed(3);
-            if (N > 0 && !animationPaused) initParticles(); updateConnections();
-            updateResonanceStatusText(); 
-        }
-        const tempColor = new THREE.Color(); 
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = this.EARTH_RADIUS * 1.5;
+                this.controls.maxDistance = this.EARTH_RADIUS * 5;
 
-        function updatePhases(deltaTimeEffective) {
-            // This function remains largely the same as the previous version.
-            // Visual updates to particles (color, position) happen here.
-            // ... (Copy from previous version)
-            if (animationPaused || !phases || phases.length !== N || N === 0 || !particlesGeometry || !particlesGeometry.attributes.position) return;
-            const earthPhase = (OMEGA_E * totalTime) % (2 * Math.PI);
-            let sumCos = 0, sumSin = 0;
-            for (let i = 0; i < N; i++) { sumCos += Math.cos(phases[i]); sumSin += Math.sin(phases[i]); }
-            r_order = N > 0 ? Math.sqrt(sumCos * sumCos + sumSin * sumSin) / N : 0;
-            const psi_collective = N > 0 ? Math.atan2(sumSin, sumCos) : 0;
-            const currentParticlePositions = particlesGeometry.attributes.position.array;
-            const currentParticleColors = particlesGeometry.attributes.color.array;
-
-            for (let i = 0; i < N; i++) {
-                const omega_i = 2 * Math.PI * intrinsicFrequencies[i];
-                const earthInteractionTerm = (1 - ALPHA_COUPLING) * K * Math.sin(earthPhase - phases[i]);
-                const collectiveInteractionTerm = ALPHA_COUPLING * K * r_order * Math.sin(psi_collective - phases[i]);
-                phases[i] += (omega_i + earthInteractionTerm + collectiveInteractionTerm) * deltaTimeEffective;
-                phases[i] = (phases[i] % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-                const phaseDifferenceToEarth = Math.abs(phases[i] - earthPhase) % (2*Math.PI);
-                const syncFactorEarth = Math.cos(phaseDifferenceToEarth / 2);
-                const phaseDifferenceToCollective = Math.abs(phases[i] - psi_collective) % (2*Math.PI);
-                const syncFactorCollective = Math.cos(phaseDifferenceToCollective / 2);
-                particleEnergy[i] = THREE.MathUtils.lerp(particleEnergy[i], (syncFactorEarth + syncFactorCollective) / 2, 0.1);
-                const hue = 0.6 + particleEnergy[i] * 0.3; const saturation = 0.5 + particleEnergy[i] * 0.5; const lightness = 0.4 + particleEnergy[i] * 0.4;
-                tempColor.setHSL(hue, saturation, lightness);
-                currentParticleColors[i * 3] = tempColor.r; currentParticleColors[i * 3 + 1] = tempColor.g; currentParticleColors[i * 3 + 2] = tempColor.b;
-                currentParticlePositions[i * 3 + 1] += (Math.random() - 0.5) * 0.005 * (1 - particleEnergy[i]);
-                const distSq = currentParticlePositions[i*3]**2 + currentParticlePositions[i*3+1]**2 + currentParticlePositions[i*3+2]**2;
-                if (distSq > (EARTH_RADIUS * 0.9)**2) { currentParticlePositions[i*3] *= 0.995; currentParticlePositions[i*3+1] *= 0.995; currentParticlePositions[i*3+2] *= 0.995; }
+                this.camera.position.set(0, this.EARTH_RADIUS * 0.3, this.EARTH_RADIUS * 2.8);
+                this.camera.lookAt(0, 0, 0);
             }
-            particlesGeometry.attributes.position.needsUpdate = true; particlesGeometry.attributes.color.needsUpdate = true;
-            if (resonancePlane && resonancePlane.material.uniforms) { resonancePlane.material.uniforms.orderParameter.value = r_order; resonancePlane.material.uniforms.time.value = totalTime; const planeScale = 1 + r_order * K * 0.02; resonancePlane.scale.set(planeScale, planeScale, 1); }
-            if (particleMaterial && particleMaterial.uniforms) { particleMaterial.uniforms.time.value = totalTime; particleMaterial.uniforms.globalOrder.value = r_order; }
-        }
 
-        function updateConnections() {
-            // This function remains largely the same as the previous version.
-            // Line drawing logic.
-            // ... (Copy from previous version)
-            if (animationPaused || !lineConnectionSystem || !particlesGeometry || !particlesGeometry.attributes.position || N === 0) { if(lineConnectionSystem) lineConnectionSystem.material.opacity = 0; return; }
-            const lineVertices = []; let connectionsDrawn = 0;
-            const particlePos = particlesGeometry.attributes.position.array;
-            if (r_order > MIN_R_ORDER_FOR_CONNECTIONS) {
-                for (let i = 0; i < N; i++) {
-                    if (connectionsDrawn >= MAX_CONNECTIONS_TO_DISPLAY) break;
-                    for (let j = i + 1; j < N; j++) {
-                        if (connectionsDrawn >= MAX_CONNECTIONS_TO_DISPLAY) break;
-                        let phaseDiff = Math.abs(phases[i] - phases[j]); phaseDiff = Math.min(phaseDiff, 2 * Math.PI - phaseDiff); 
-                        if (phaseDiff < CONNECTION_PHASE_THRESHOLD * (1.5 - particleEnergy[i]) * (1.5-particleEnergy[j]) ) {
-                            const connectionStrength = particleEnergy[i] * particleEnergy[j];
-                            if (Math.random() < connectionStrength * 0.5) {
-                                lineVertices.push(particlePos[i * 3], particlePos[i * 3 + 1], particlePos[i * 3 + 2]);
-                                lineVertices.push(particlePos[j * 3], particlePos[j * 3 + 1], particlePos[j * 3 + 2]);
-                                connectionsDrawn++;
+            initEarth() {
+                if (this.earth) this.scene.remove(this.earth);
+                const earthGeometry = new THREE.SphereGeometry(this.EARTH_RADIUS, 64, 64);
+                const earthMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x204080,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.15,
+                    emissive: 0x102040,
+                    emissiveIntensity: 0.5,
+                    roughness: 0.7,
+                    metalness: 0.3
+                });
+                this.earth = new THREE.Mesh(earthGeometry, earthMaterial);
+                this.scene.add(this.earth);
+            }
+
+            initAura() {
+                if (this.aura) this.scene.remove(this.aura);
+                const auraGeometry = new THREE.SphereGeometry(this.EARTH_RADIUS * this.AURA_RADIUS_FACTOR, 64, 64);
+                const auraMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        time: { value: 0.0 },
+                        orderParameter: { value: 0.0 }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        uniform float time;
+                        void main() {
+                            vUv = uv;
+                            vec3 pos = position;
+                            pos += normal * sin(time + pos.x * 2.0) * 0.05;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float time;
+                        uniform float orderParameter;
+                        varying vec2 vUv;
+                        void main() {
+                            float glow = 0.3 + 0.7 * sin(time + vUv.x * 10.0 + vUv.y * 5.0);
+                            vec3 color = mix(vec3(0.0, 0.6, 1.0), vec3(0.2, 0.8, 1.0), orderParameter);
+                            gl_FragColor = vec4(color, 0.05 + orderParameter * 0.15 * glow);
+                        }
+                    `,
+                    transparent: true,
+                    wireframe: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                this.aura = new THREE.Mesh(auraGeometry, auraMaterial);
+                this.scene.add(this.aura);
+            }
+
+            initParticles() {
+                if (this.particleSystem) this.scene.remove(this.particleSystem);
+                if (this.particlesGeometry) this.particlesGeometry.dispose();
+                if (this.particleMaterial) this.particleMaterial.dispose();
+
+                this.particlesGeometry = new THREE.InstancedBufferGeometry();
+                const baseGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+                this.particlesGeometry.copy(baseGeometry);
+
+                const instancePositions = new Float32Array(this.N * 3);
+                const instanceColors = new Float32Array(this.N * 3);
+                const instanceSizes = new Float32Array(this.N);
+
+                this.phases = [];
+                this.intrinsicFrequencies = [];
+                this.particleEnergy = [];
+
+                for (let i = 0; i < this.N; i++) {
+                    const theta = Math.random() * 2 * Math.PI;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const r_particle = (0.2 + Math.random() * 0.7) * this.EARTH_RADIUS;
+                    instancePositions[i * 3] = r_particle * Math.sin(phi) * Math.cos(theta);
+                    instancePositions[i * 3 + 1] = r_particle * Math.sin(phi) * Math.sin(theta);
+                    instancePositions[i * 3 + 2] = r_particle * Math.cos(phi);
+                    instanceColors[i * 3] = 0.5;
+                    instanceColors[i * 3 + 1] = 0.2;
+                    instanceColors[i * 3 + 2] = 0.8;
+                    instanceSizes[i] = 0.1 + Math.random() * 0.08;
+                    this.phases.push(Math.random() * 2 * Math.PI);
+                    this.intrinsicFrequencies.push(4 + Math.random() * 4);
+                    this.particleEnergy.push(Math.random());
+                }
+
+                this.particlesGeometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(instancePositions, 3));
+                this.particlesGeometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
+                this.particlesGeometry.setAttribute('instanceSize', new THREE.InstancedBufferAttribute(instanceSizes, 1));
+
+                this.particleMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        time: { value: 0.0 },
+                        globalOrder: { value: 0.0 },
+                        pulseFactor: { value: 1.0 }
+                    },
+                    vertexShader: `
+                        attribute vec3 instancePosition;
+                        attribute vec3 instanceColor;
+                        attribute float instanceSize;
+                        varying vec3 vColor;
+                        uniform float time;
+                        uniform float globalOrder;
+                        uniform float pulseFactor;
+                        void main() {
+                            vColor = instanceColor;
+                            vec4 mvPosition = modelViewMatrix * vec4(instancePosition, 1.0);
+                            float pulse = 1.0 + 0.5 * sin(time * 5.0 + globalOrder * 10.0) * pulseFactor;
+                            gl_Position = projectionMatrix * mvPosition;
+                            gl_PointSize = instanceSize * (1.0 + globalOrder * 2.0) * pulse * (200.0 / -mvPosition.z);
+                        }
+                    `,
+                    fragmentShader: `
+                        varying vec3 vColor;
+                        uniform float time;
+                        void main() {
+                            float alpha = 0.55 + 0.45 * sin(time * 12.0 + gl_FragCoord.x * 0.15 + gl_FragCoord.y * 0.05);
+                            if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.47) discard;
+                            gl_FragColor = vec4(vColor, alpha);
+                        }
+                    `,
+                    transparent: true,
+                    vertexColors: true,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                });
+
+                this.particleSystem = new THREE.Mesh(this.particlesGeometry, this.particleMaterial);
+                this.scene.add(this.particleSystem);
+            }
+
+            initResonancePlane() {
+                if (this.resonancePlane) this.scene.remove(this.resonancePlane);
+                const planeGeometry = new THREE.PlaneGeometry(this.EARTH_RADIUS * 3.5, this.EARTH_RADIUS * 3.5, 48, 48);
+                const planeMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        time: { value: 0.0 },
+                        orderParameter: { value: 0.0 },
+                        baseColor: { value: new THREE.Color(0x55aaff) },
+                        glowColor: { value: new THREE.Color(0xaadeff) }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        uniform float time;
+                        uniform float orderParameter;
+                        void main() {
+                            vUv = uv;
+                            vec3 pos = position;
+                            float dist = length(pos.xy);
+                            float wave1 = sin(dist * 3.0 - time * 2.5 + orderParameter * 7.0) * 0.2 * orderParameter;
+                            float wave2 = cos(dist * 5.0 + time * 1.5 - orderParameter * 4.0) * 0.15 * orderParameter;
+                            pos.z += (wave1 + wave2) * (1.0 - smoothstep(0.0, 8.0, dist));
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        varying vec2 vUv;
+                        uniform float time;
+                        uniform float orderParameter;
+                        uniform vec3 baseColor;
+                        uniform vec3 glowColor;
+                        void main() {
+                            float op = max(0.0, orderParameter - 0.1) * 3.0;
+                            float pattern = 0.4 + 0.6 * sin(vUv.x * 30.0 + vUv.y * 5.0 + time * 2.0 + orderParameter * 15.0);
+                            pattern *= (0.4 + 0.6 * cos(vUv.y * 25.0 - time * 1.5 + orderParameter * 10.0));
+                            op = clamp(op * pattern, 0.0, 0.8);
+                            float edgeFactor = 1.0 - smoothstep(0.30, 0.5, length(vUv - 0.5));
+                            op *= edgeFactor;
+                            vec3 color = mix(baseColor, glowColor, smoothstep(0.15, 0.75, orderParameter));
+                            gl_FragColor = vec4(color, op);
+                        }
+                    `,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                });
+                this.resonancePlane = new THREE.Mesh(planeGeometry, planeMaterial);
+                this.resonancePlane.rotation.x = Math.PI / 2;
+                this.resonancePlane.position.y = -this.EARTH_RADIUS * 0.05;
+                this.scene.add(this.resonancePlane);
+            }
+
+            initLineConnections() {
+                if (this.lineConnectionSystem) this.scene.remove(this.lineConnectionSystem);
+                if (this.lineGeometry) this.lineGeometry.dispose();
+                if (this.lineMaterial) this.lineMaterial.dispose();
+                this.lineGeometry = new THREE.BufferGeometry();
+                this.lineMaterial = new THREE.LineBasicMaterial({
+                    color: 0x99bbff,
+                    transparent: true,
+                    opacity: 0,
+                    linewidth: 1,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                this.lineConnectionSystem = new THREE.LineSegments(this.lineGeometry, this.lineMaterial);
+                this.scene.add(this.lineConnectionSystem);
+            }
+
+            initChart() {
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+                this.orderChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Order Parameter (r)',
+                            data: [],
+                            borderColor: '#00ccff',
+                            backgroundColor: 'rgba(0, 204, 255, 0.2)',
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { display: false },
+                            y: { min: 0, max: 1, title: { display: true, text: 'r' } }
+                        },
+                        plugins: { legend: { labels: { color: '#e0e0e0' } } }
+                    }
+                });
+            }
+
+            updateChart() {
+                this.orderChart.data.labels.push(this.totalTime.toFixed(2));
+                this.orderChart.data.datasets[0].data.push(this.r_order);
+                if (this.orderChart.data.labels.length > 100) {
+                    this.orderChart.data.labels.shift();
+                    this.orderChart.data.datasets[0].data.shift();
+                }
+                this.orderChart.update();
+            }
+
+            updatePhases(deltaTimeEffective) {
+                if (this.animationPaused || !this.phases || this.phases.length !== this.N || this.N === 0 || !this.particlesGeometry) return;
+                const earthPhase = (this.OMEGA_E * this.totalTime) % (2 * Math.PI);
+                let sumCos = 0, sumSin = 0;
+                for (let i = 0; i < this.N; i++) {
+                    sumCos += Math.cos(this.phases[i]);
+                    sumSin += Math.sin(this.phases[i]);
+                }
+                this.r_order = this.N > 0 ? Math.sqrt(sumCos * sumCos + sumSin * sumSin) / this.N : 0;
+                const psi_collective = this.N > 0 ? Math.atan2(sumSin, sumCos) : 0;
+                const currentParticleColors = this.particlesGeometry.attributes.instanceColor.array;
+                const currentParticlePositions = this.particlesGeometry.attributes.instancePosition.array;
+                const tempColor = new THREE.Color();
+
+                for (let i = 0; i < this.N; i++) {
+                    const omega_i = 2 * Math.PI * this.intrinsicFrequencies[i];
+                    const earthInteractionTerm = (1 - this.ALPHA_COUPLING) * this.K * Math.sin(earthPhase - this.phases[i]);
+                    const collectiveInteractionTerm = this.ALPHA_COUPLING * this.K * this.r_order * Math.sin(psi_collective - this.phases[i]);
+                    this.phases[i] += (omega_i + earthInteractionTerm + collectiveInteractionTerm) * deltaTimeEffective;
+                    this.phases[i] = (this.phases[i] % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                    const phaseDifferenceToEarth = Math.abs(this.phases[i] - earthPhase) % (2 * Math.PI);
+                    const syncFactorEarth = Math.cos(phaseDifferenceToEarth / 2);
+                    const phaseDifferenceToCollective = Math.abs(this.phases[i] - psi_collective) % (2 * Math.PI);
+                    const syncFactorCollective = Math.cos(phaseDifferenceToCollective / 2);
+                    this.particleEnergy[i] = THREE.MathUtils.lerp(this.particleEnergy[i], (syncFactorEarth + syncFactorCollective) / 2, 0.1);
+                    const hue = 0.6 + this.particleEnergy[i] * 0.3;
+                    const saturation = 0.5 + this.particleEnergy[i] * 0.5;
+                    const lightness = 0.4 + this.particleEnergy[i] * 0.4;
+                    tempColor.setHSL(hue, saturation, lightness);
+                    currentParticleColors[i * 3] = tempColor.r;
+                    currentParticleColors[i * 3 + 1] = tempColor.g;
+                    currentParticleColors[i * 3 + 2] = tempColor.b;
+                    currentParticlePositions[i * 3 + 1] += (Math.random() - 0.5) * 0.005 * (1 - this.particleEnergy[i]);
+                    const distSq = currentParticlePositions[i * 3] ** 2 + currentParticlePositions[i * 3 + 1] ** 2 + currentParticlePositions[i * 3 + 2] ** 2;
+                    if (distSq > (this.EARTH_RADIUS * 0.9) ** 2) {
+                        currentParticlePositions[i * 3] *= 0.995;
+                        currentParticlePositions[i * 3 + 1] *= 0.995;
+                        currentParticlePositions[i * 3 + 2] *= 0.995;
+                    }
+                }
+                this.particlesGeometry.attributes.instancePosition.needsUpdate = true;
+                this.particlesGeometry.attributes.instanceColor.needsUpdate = true;
+                if (this.resonancePlane) {
+                    this.resonancePlane.material.uniforms.orderParameter.value = this.r_order;
+                    this.resonancePlane.material.uniforms.time.value = this.totalTime;
+                    const planeScale = 1 + this.r_order * this.K * 0.02;
+                    this.resonancePlane.scale.set(planeScale, planeScale, 1);
+                }
+                if (this.particleMaterial) {
+                    this.particleMaterial.uniforms.time.value = this.totalTime;
+                    this.particleMaterial.uniforms.globalOrder.value = this.r_order;
+                }
+            }
+
+            updateConnections() {
+                if (this.animationPaused || !this.lineConnectionSystem || !this.particlesGeometry || this.N === 0) {
+                    if (this.lineConnectionSystem) this.lineConnectionSystem.material.opacity = 0;
+                    return;
+                }
+                const lineVertices = [];
+                let connectionsDrawn = 0;
+                const particlePos = this.particlesGeometry.attributes.instancePosition.array;
+                if (this.r_order > this.MIN_R_ORDER_FOR_CONNECTIONS) {
+                    for (let i = 0; i < this.N; i++) {
+                        if (connectionsDrawn >= this.MAX_CONNECTIONS_TO_DISPLAY) break;
+                        for (let j = i + 1; j < this.N; j++) {
+                            if (connectionsDrawn >= this.MAX_CONNECTIONS_TO_DISPLAY) break;
+                            let phaseDiff = Math.abs(this.phases[i] - this.phases[j]);
+                            phaseDiff = Math.min(phaseDiff, 2 * Math.PI - phaseDiff);
+                            if (phaseDiff < this.CONNECTION_PHASE_THRESHOLD * (1.5 - this.particleEnergy[i]) * (1.5 - this.particleEnergy[j])) {
+                                const connectionStrength = this.particleEnergy[i] * this.particleEnergy[j];
+                                if (Math.random() < connectionStrength * 0.5) {
+                                    lineVertices.push(particlePos[i * 3], particlePos[i * 3 + 1], particlePos[i * 3 + 2]);
+                                    lineVertices.push(particlePos[j * 3], particlePos[j * 3 + 1], particlePos[j * 3 + 2]);
+                                    connectionsDrawn++;
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (lineVertices.length > 0) {
-                lineConnectionSystem.geometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
-                lineConnectionSystem.geometry.attributes.position.needsUpdate = true;
-                const baseOpacity = Math.min(0.05, (r_order - MIN_R_ORDER_FOR_CONNECTIONS) * 0.5);
-                lineConnectionSystem.material.opacity = baseOpacity + Math.min(0.5, r_order * 0.8);
-                const lineHue = 0.55 + r_order * 0.3;
-                lineConnectionSystem.material.color.setHSL(lineHue, 0.7, 0.5 + r_order * 0.2);
-            } else { lineConnectionSystem.material.opacity = 0; }
-        }
-        
-        function updateResonanceStatusText() {
-            if (animationPaused && !audioCtx) {resonanceStatusEl.textContent = "Click 'Run Simulation' to begin."; return;}
-            if (animationPaused && audioCtx) {resonanceStatusEl.textContent = "Simulation Paused. (Audio might continue if started)"; return;} // More accurate if audio context exists but animation is paused.
-            if (r_order < 0.15) resonanceStatusEl.textContent = "Low Coherence: Oscillators largely unsynchronized.";
-            else if (r_order < 0.35) resonanceStatusEl.textContent = "Emerging Coherence: Partial phase-locking observed.";
-            else if (r_order < 0.6) resonanceStatusEl.textContent = "Significant Coherence: Strong phase synchronization.";
-            else resonanceStatusEl.textContent = "High Global Coherence: System approaching full synchronization.";
-        }
-
-        let frame_lastTime = 0;
-        function animate(time) {
-            if (animationPaused && time !==0) { requestAnimationFrame(animate); return; }
-            requestAnimationFrame(animate);
-            const now = time * 0.001; const deltaTime = now - frame_lastTime; frame_lastTime = now;
-            const effectiveDeltaTime = Math.min(deltaTime, 0.1) * SIMULATION_SPEED; 
-            if(N > 0 && phases && phases.length > 0) { totalTime += effectiveDeltaTime; }
-
-            if (earth) {
-                earth.rotation.y += EARTH_BASE_ROTATION_SPEED * SIMULATION_SPEED * 60 * deltaTime; 
-                earth.material.emissiveIntensity = 0.3 + r_order * 0.4;
-                earth.material.opacity = 0.1 + r_order * 0.08;
-            }
-            if (aura) {
-                aura.rotation.y += (EARTH_BASE_ROTATION_SPEED * 1.5) * SIMULATION_SPEED * 60 * deltaTime; 
-                aura.rotation.x += (EARTH_BASE_ROTATION_SPEED * 0.8) * SIMULATION_SPEED * 60 * deltaTime;
-                const pulse = 1 + 0.05 * Math.sin(totalTime * OMEGA_E * 0.2) * (1 + K * 0.01 + r_order * 1.5); 
-                aura.scale.set(pulse, pulse, pulse);
-                aura.material.emissiveIntensity = 0.2 + r_order * 0.7;
-                aura.material.opacity = 0.03 + r_order * 0.15;
+                if (lineVertices.length > 0) {
+                    this.lineConnectionSystem.geometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
+                    this.lineConnectionSystem.geometry.attributes.position.needsUpdate = true;
+                    const baseOpacity = Math.min(0.05, (this.r_order - this.MIN_R_ORDER_FOR_CONNECTIONS) * 0.5);
+                    this.lineConnectionSystem.material.opacity = baseOpacity + Math.min(0.5, this.r_order * 0.8);
+                    const lineHue = 0.55 + this.r_order * 0.3;
+                    this.lineConnectionSystem.material.color.setHSL(lineHue, 0.7, 0.5 + this.r_order * 0.2);
+                } else {
+                    this.lineConnectionSystem.material.opacity = 0;
+                }
             }
 
-            if(N > 0 && phases && phases.length > 0) { updatePhases(effectiveDeltaTime); updateConnections(); } 
-            else { updateConnections(); }
+            updateResonanceStatusText() {
+                const el = document.getElementById('resonanceStatus');
+                if (this.animationPaused && !this.audioCtx) {
+                    el.textContent = "Click 'Run Simulation' to begin.";
+                    return;
+                }
+                if (this.animationPaused && this.audioCtx) {
+                    el.textContent = "Simulation Paused. Audio may continue.";
+                    return;
+                }
+                if (this.r_order < 0.15) el.textContent = "Low Coherence: Oscillators unsynchronized.";
+                else if (this.r_order < 0.35) el.textContent = "Emerging Coherence: Partial phase-locking.";
+                else if (this.r_order < 0.6) el.textContent = "Significant Coherence: Strong synchronization.";
+                else el.textContent = "High Global Coherence: Near full synchronization.";
+            }
 
-            updateAudio(); // Update audio parameters based on simulation state
+            animate(time) {
+                requestAnimationFrame((t) => this.animate(t));
+                if (this.animationPaused && time !== 0) return;
+                const now = time * 0.001;
+                const deltaTime = now - this.frame_lastTime;
+                this.frame_lastTime = now;
+                const effectiveDeltaTime = Math.min(deltaTime, 0.1) * this.SIMULATION_SPEED;
+                if (this.N > 0 && this.phases && this.phases.length > 0) {
+                    this.totalTime += effectiveDeltaTime;
+                }
 
-            document.getElementById('orderParameter').textContent = r_order.toFixed(3);
-            updateResonanceStatusText();
-            if (composer) composer.render(); else renderer.render(scene, camera);
+                if (this.earth) {
+                    this.earth.rotation.y += this.EARTH_BASE_ROTATION_SPEED * this.SIMULATION_SPEED * 60 * deltaTime;
+                    this.earth.material.emissiveIntensity = 0.3 + this.r_order * 0.4;
+                    this.earth.material.opacity = 0.1 + this.r_order * 0.08;
+                }
+                if (this.aura) {
+                    this.aura.rotation.y += (this.EARTH_BASE_ROTATION_SPEED * 1.5) * this.SIMULATION_SPEED * 60 * deltaTime;
+                    this.aura.rotation.x += (this.EARTH_BASE_ROTATION_SPEED * 0.8) * this.SIMULATION_SPEED * 60 * deltaTime;
+                    const pulse = 1 + 0.05 * Math.sin(this.totalTime * this.OMEGA_E * 0.2) * (1 + this.K * 0.01 + this.r_order * 1.5);
+                    this.aura.scale.set(pulse, pulse, pulse);
+                    this.aura.material.uniforms.time.value = this.totalTime;
+                    this.aura.material.uniforms.orderParameter.value = this.r_order;
+                }
+
+                if (this.N > 0 && this.phases && this.phases.length > 0) {
+                    this.updatePhases(effectiveDeltaTime);
+                    this.updateConnections();
+                } else {
+                    this.updateConnections();
+                }
+
+                this.updateAudio();
+                document.getElementById('orderParameter').textContent = this.r_order.toFixed(3);
+                this.updateResonanceStatusText();
+                this.updateChart();
+                this.controls.update();
+                this.composer.render();
+            }
+
+            resetSimulation() {
+                this.K = 2.0;
+                this.N = parseInt(document.getElementById('numBrains').value);
+                this.SIMULATION_SPEED = 0.3;
+                this.ALPHA_COUPLING = 0.5;
+                document.getElementById('coupling').value = this.K;
+                document.getElementById('simSpeed').value = this.SIMULATION_SPEED;
+                document.getElementById('alphaCoupling').value = this.ALPHA_COUPLING;
+                document.getElementById('couplingValue').textContent = this.K.toFixed(1);
+                document.getElementById('simSpeedValue').textContent = this.SIMULATION_SPEED.toFixed(2);
+                document.getElementById('alphaCouplingValue').textContent = this.ALPHA_COUPLING.toFixed(2);
+                this.totalTime = 0;
+                this.r_order = 0;
+                this.lastRNormalizedForChime = 0;
+                document.getElementById('orderParameter').textContent = this.r_order.toFixed(3);
+                if (this.N > 0 && !this.animationPaused) {
+                    this.initParticles();
+                    this.updateConnections();
+                }
+                this.orderChart.data.labels = [];
+                this.orderChart.data.datasets[0].data = [];
+                this.orderChart.update();
+                this.updateResonanceStatusText();
+            }
+
+            init() {
+                this.initScene();
+                this.initEarth();
+                this.initAura();
+                this.initParticles();
+                this.initResonancePlane();
+                this.initLineConnections();
+                this.initChart();
+
+                document.getElementById('couplingValue').textContent = this.K.toFixed(1);
+                document.getElementById('numBrainsValue').textContent = this.N;
+                document.getElementById('simSpeedValue').textContent = this.SIMULATION_SPEED.toFixed(2);
+                document.getElementById('alphaCouplingValue').textContent = this.ALPHA_COUPLING.toFixed(2);
+                document.getElementById('volumeValue').textContent = parseFloat(document.getElementById('masterVolume').value).toFixed(2);
+
+                document.getElementById('coupling').addEventListener('input', (e) => {
+                    this.K = parseFloat(e.target.value);
+                    document.getElementById('couplingValue').textContent = this.K.toFixed(1);
+                });
+                document.getElementById('numBrains').addEventListener('input', (e) => {
+                    this.N = parseInt(e.target.value);
+                    document.getElementById('numBrainsValue').textContent = this.N;
+                    if (this.N > 0 && !this.animationPaused) {
+                        this.initParticles();
+                        this.updateConnections();
+                    }
+                });
+                document.getElementById('simSpeed').addEventListener('input', (e) => {
+                    this.SIMULATION_SPEED = parseFloat(e.target.value);
+                    document.getElementById('simSpeedValue').textContent = this.SIMULATION_SPEED.toFixed(2);
+                });
+                document.getElementById('alphaCoupling').addEventListener('input', (e) => {
+                    this.ALPHA_COUPLING = parseFloat(e.target.value);
+                    document.getElementById('alphaCouplingValue').textContent = this.ALPHA_COUPLING.toFixed(2);
+                });
+                document.getElementById('masterVolume').addEventListener('input', (e) => {
+                    if (this.masterGain) this.masterGain.gain.value = parseFloat(e.target.value);
+                    document.getElementById('volumeValue').textContent = parseFloat(e.target.value).toFixed(2);
+                });
+                document.getElementById('pauseButton').addEventListener('click', () => {
+                    this.animationPaused = !this.animationPaused;
+                    document.getElementById('pauseButton').textContent = this.animationPaused ? 'Resume' : 'Pause';
+                    this.updateResonanceStatusText();
+                });
+                document.getElementById('resetButton').addEventListener('click', () => this.resetSimulation());
+                document.getElementById('startExperienceButton').addEventListener('click', async () => {
+                    await this.initAudio();
+                    document.getElementById('introOverlay').style.display = 'none';
+                    this.animationPaused = false;
+                    if (this.N > 0) {
+                        this.initParticles();
+                        this.updateConnections();
+                    }
+                    this.animate(0);
+                });
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    document.documentElement.style.setProperty('--bg-color', document.documentElement.style.getPropertyValue('--bg-color') === '#000005' ? '#f0f0f5' : '#000005');
+                    document.documentElement.style.setProperty('--panel-bg', document.documentElement.style.getPropertyValue('--panel-bg') === 'rgba(20, 10, 50, 0.8)' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(20, 10, 50, 0.8)');
+                    document.documentElement.style.setProperty('--text-color', document.documentElement.style.getPropertyValue('--text-color') === '#e0e0e0' ? '#333333' : '#e0e0e0');
+                    this.orderChart.options.plugins.legend.labels.color = document.documentElement.style.getPropertyValue('--text-color');
+                    this.orderChart.update();
+                });
+
+                tippy('#coupling', { content: 'Controls the strength of interaction between oscillators and the external pacer.' });
+                tippy('#numBrains', { content: 'Number of oscillators in the simulation.' });
+                tippy('#simSpeed', { content: 'Adjusts the speed of the simulation.' });
+                tippy('#alphaCoupling', { content: 'Balances coupling between external pacer and collective oscillators.' });
+                tippy('#masterVolume', { content: 'Controls the audio volume of the simulation.' });
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    this.composer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                this.updateResonanceStatusText();
+            }
         }
 
-        function init() {
-            initEarth(); initAura(); initResonancePlane(); initLineConnections();
-            couplingValueSpan.textContent = K.toFixed(1); numBrainsValueSpan.textContent = N;
-            simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2);
-            resetButton.addEventListener('click', resetSimulation);
-            updateResonanceStatusText(); 
-        }
-        init();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            if (composer) { composer.setSize(window.innerWidth, window.innerHeight); if (bloom_pass && bloom_pass.resolution) { bloom_pass.resolution.set(window.innerWidth, window.innerHeight); } } // Fixed typo bloom_pass
-        });
+        const sim = new OscillatorSimulation();
+        sim.init();
     </script>
 </body>
 </html>
