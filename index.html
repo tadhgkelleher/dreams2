@@ -7,10 +7,10 @@
     <style>
         body { margin: 0; overflow: hidden; background: #000005; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .panel { position: absolute; background: rgba(10, 0, 30, 0.9); padding: 15px 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(120, 100, 255, 0.5); border: 1px solid rgba(120, 100, 255, 0.3); z-index: 10; }
-        #info { top: 15px; left: 15px; font-size: 15px; max-width: 320px; /* Increased max-width for new text */ }
+        #info { top: 15px; left: 15px; font-size: 15px; max-width: 320px; }
         #info h2 { margin-top: 0; color: #99eeff; }
         #info p { margin: 8px 0; }
-        #resonanceStatus { font-style: normal; /* Removed italic */ color: #bbf0dd; margin-top: 10px; min-height: 3.5em; /* Adjusted for longer text */ font-size: 0.95em; }
+        #resonanceStatus { font-style: normal; color: #bbf0dd; margin-top: 10px; min-height: 3.5em; font-size: 0.95em; }
         #controls { top: 15px; right: 15px; }
         #controls label { display: block; margin: 12px 0; font-size: 14px; }
         #controls input[type="range"] { width: 180px; cursor: pointer; margin-left: 5px; vertical-align: middle; }
@@ -42,8 +42,8 @@
             <h1>Global Oscillator Synchronization Model</h1>
             <p>This visualization models a <strong>hypothetical scenario</strong> where a population of oscillators (representing simplified "minds" with intrinsic frequencies in the Theta/Alpha brainwave range, ~4-8Hz) are coupled to each other and to an external pacer (Earth's Schumann Resonance, ~7.83Hz).</p>
             <p>The simulation employs the <strong>Kuramoto model</strong> to explore emergent synchronization phenomena. Observe how individual oscillators adjust their phase and how collective coherence (measured by the order parameter 'r') develops under varying coupling strengths and population sizes.</p>
-            <p>The visual representation of global synchronization and inter-oscillator connections is a <strong>conceptual model</strong>. Focus on the patterns and dynamics as parameters are adjusted.</p>
-            <button id="startExperienceButton">Run Simulation</button>
+            <p>Explore the parameters to observe the emergent patterns and dynamics of this <strong>conceptual model</strong>.</p>
+            <button id="startExperienceButton">Run Simulation with Audio</button>
         </div>
     </div>
 
@@ -58,6 +58,7 @@
         <label>Oscillators (N): <span id="numBrainsValue">300</span> <input type="range" id="numBrains" min="50" max="700" step="25" value="300"></label>
         <label>Sim Speed: <span id="simSpeedValue">0.3</span> <input type="range" id="simSpeed" min="0.05" max="1" step="0.05" value="0.3"></label>
         <label>Pacer Bal. (E↔C): <span id="alphaCouplingValue">0.5</span> <input type="range" id="alphaCoupling" min="0" max="1" step="0.05" value="0.5"></label>
+        <label>Volume: <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.3"></label>
         <button id="resetButton">Reset Simulation</button>
     </div>
 
@@ -70,7 +71,103 @@
     <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
     <script>
-        // --- Scene Setup, Lighting, Post-processing, Constants (mostly unchanged) ---
+        // --- Audio Setup ---
+        let audioCtx;
+        let masterGain;
+        let droneOsc, droneLFO, droneGain, droneLFOGain;
+        let pentatonicFrequencies = [];
+        let lastChimeTime = 0;
+        const CHIME_COOLDOWN = 300; // milliseconds
+        let lastRNormalizedForChime = 0;
+
+        function initAudio() {
+            if (audioCtx) return; // Already initialized
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) {
+                console.warn("Web Audio API not supported in this browser.");
+                return;
+            }
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = parseFloat(document.getElementById('masterVolume').value); // Initial volume
+            masterGain.connect(audioCtx.destination);
+
+            // Drone setup
+            droneOsc = audioCtx.createOscillator();
+            droneGain = audioCtx.createGain(); // Main gain for the drone's audible tone
+            droneLFO = audioCtx.createOscillator();
+            droneLFOGain = audioCtx.createGain(); // Gain controlled by LFO, then modulates droneGain
+
+            droneOsc.type = 'sine'; // Soft audible tone
+            droneOsc.frequency.setValueAtTime(7.83 * 8, audioCtx.currentTime); // Audible harmonic (approx 62.64 Hz)
+            droneGain.gain.value = 0; // Start silent, will be modulated
+
+            droneLFO.type = 'sine';
+            droneLFO.frequency.setValueAtTime(F_E, audioCtx.currentTime); // Schumann frequency for pulsing
+            
+            droneOsc.connect(droneGain);
+            droneGain.connect(masterGain);
+            
+            droneLFO.connect(droneLFOGain); // LFO output to control the gain amount
+            droneLFOGain.connect(droneGain.gain); // LFO's gain signal modulates the audible drone's gain (AM)
+
+            droneLFOGain.gain.value = 0.0; // Depth of LFO modulation, starts low
+
+            droneOsc.start();
+            droneLFO.start();
+
+            // Pentatonic Scale (C Major Pentatonic starting C4)
+            const rootFreq = 261.63; // C4
+            const intervals = [0, 2, 4, 7, 9, 12, 14]; // Semitones for C, D, E, G, A, C5, D5
+            pentatonicFrequencies = intervals.map(interval => rootFreq * Math.pow(2, interval / 12));
+        }
+
+        function playPentatonicChime() {
+            if (!audioCtx || audioCtx.currentTime - lastChimeTime < CHIME_COOLDOWN / 1000) {
+                return;
+            }
+            lastChimeTime = audioCtx.currentTime;
+
+            const freqIndex = Math.floor(Math.random() * pentatonicFrequencies.length);
+            const frequency = pentatonicFrequencies[freqIndex];
+
+            const chimeOsc = audioCtx.createOscillator();
+            const chimeGain = audioCtx.createGain();
+
+            chimeOsc.type = 'triangle'; // Softer than sine for chimes
+            chimeOsc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            
+            chimeGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            chimeGain.gain.linearRampToValueAtTime(0.4 * (0.2 + r_order * 0.8), audioCtx.currentTime + 0.05); // Quick attack, volume based on r_order
+            chimeGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2 + r_order); // Decay based on r_order
+
+            chimeOsc.connect(chimeGain).connect(masterGain);
+            chimeOsc.start(audioCtx.currentTime);
+            chimeOsc.stop(audioCtx.currentTime + 1.5 + r_order);
+        }
+
+        function updateAudio() {
+            if (!audioCtx) return;
+
+            const targetDroneGain = 0.01 + r_order * 0.15; // Base volume for drone
+            droneGain.gain.setTargetAtTime(targetDroneGain, audioCtx.currentTime, 0.1);
+            
+            const targetLFODepth = 0.05 + r_order * 0.4; // How much the LFO affects the volume
+            droneLFOGain.gain.setTargetAtTime(targetLFODepth * targetDroneGain, audioCtx.currentTime, 0.1); // LFO depth also scaled by overall drone gain
+
+            // Trigger chimes when r_order crosses new "tenths" thresholds
+            const currentRNormalized = Math.floor(r_order * 10);
+            if (currentRNormalized > lastRNormalizedForChime && r_order > 0.2) {
+                playPentatonicChime();
+                lastRNormalizedForChime = currentRNormalized;
+            } else if (r_order < 0.1) { // Reset if order drops low
+                 lastRNormalizedForChime = 0;
+            }
+        }
+
+
+        // --- Scene Setup, Lighting, Post-processing, Constants (mostly unchanged from previous) ---
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x050010, 0.05);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -99,7 +196,7 @@
         const MIN_R_ORDER_FOR_CONNECTIONS = 0.25;
         const CONNECTION_PHASE_THRESHOLD = Math.PI / 8;
         const MAX_CONNECTIONS_TO_DISPLAY = 2500;
-        const EARTH_BASE_ROTATION_SPEED = 0.00015; // Consistent base rotation
+        const EARTH_BASE_ROTATION_SPEED = 0.00015; 
 
         let earth, aura, particleSystem, resonancePlane, lineConnectionSystem;
         let particlesGeometry, particleMaterial;
@@ -119,7 +216,7 @@
             const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 48, 48);
             const earthMaterial = new THREE.MeshStandardMaterial({
                 color: 0x204080, wireframe: true, transparent: true,
-                opacity: 0.12, // Slightly more opaque base
+                opacity: 0.12, 
                 emissive: 0x102040, emissiveIntensity: 0.4,
                 roughness: 0.8, metalness: 0.2
             });
@@ -170,20 +267,8 @@
 
             particleMaterial = new THREE.ShaderMaterial({
                 uniforms: { time: { value: 0.0 }, globalOrder: { value: 0.0 } },
-                vertexShader: `
-                    attribute float size; varying vec3 vColor; uniform float globalOrder;
-                    void main() {
-                        vColor = color; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                        gl_PointSize = size * (1.0 + globalOrder * 1.5) * (200.0 / -mvPosition.z); // Adjusted globalOrder impact
-                        gl_Position = projectionMatrix * mvPosition;
-                    }`,
-                fragmentShader: `
-                    varying vec3 vColor; uniform float time;
-                    void main() {
-                        float alpha = 0.55 + 0.45 * sin(time * 12.0 + gl_FragCoord.x * 0.15 + gl_FragCoord.y * 0.05); // Adjusted flicker
-                        if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.47) discard;
-                        gl_FragColor = vec4(vColor, alpha);
-                    }`,
+                vertexShader: `attribute float size; varying vec3 vColor; uniform float globalOrder; void main() { vColor = color; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_PointSize = size * (1.0 + globalOrder * 1.5) * (200.0 / -mvPosition.z); gl_Position = projectionMatrix * mvPosition; }`,
+                fragmentShader: `varying vec3 vColor; uniform float time; void main() { float alpha = 0.55 + 0.45 * sin(time * 12.0 + gl_FragCoord.x * 0.15 + gl_FragCoord.y * 0.05); if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.47) discard; gl_FragColor = vec4(vColor, alpha); }`,
                 transparent: true, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending
             });
             particleSystem = new THREE.Points(particlesGeometry, particleMaterial);
@@ -193,7 +278,7 @@
         function initResonancePlane() {
             if (resonancePlane) scene.remove(resonancePlane);
             const planeGeometry = new THREE.PlaneGeometry(EARTH_RADIUS * 3.5, EARTH_RADIUS * 3.5, 48, 48);
-            const planeMaterial = new THREE.ShaderMaterial({ // Shader code remains the same or can be further tweaked
+            const planeMaterial = new THREE.ShaderMaterial({
                 uniforms: { time: { value: 0.0 }, orderParameter: { value: 0.0 }, baseColor: { value: new THREE.Color(0x55aaff) }, glowColor: { value: new THREE.Color(0xaadeff) } },
                 vertexShader: `varying vec2 vUv; uniform float time; uniform float orderParameter; void main() { vUv = uv; vec3 pos = position; float dist = length(pos.xy); float wave1 = sin(dist * 3.0 - time * 2.5 + orderParameter * 7.0) * 0.2 * orderParameter; float wave2 = cos(dist * 5.0 + time * 1.5 - orderParameter * 4.0) * 0.15 * orderParameter; pos.z += (wave1 + wave2) * (1.0 - smoothstep(0.0, 8.0, dist)); gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }`,
                 fragmentShader: `varying vec2 vUv; uniform float time; uniform float orderParameter; uniform vec3 baseColor; uniform vec3 glowColor; void main() { float op = max(0.0, orderParameter - 0.1) * 3.0; float pattern = 0.4 + 0.6 * sin(vUv.x * 30.0 + vUv.y*5.0 + time*2.0 + orderParameter * 15.0); pattern *= (0.4 + 0.6 * cos(vUv.y * 25.0 - time*1.5 + orderParameter * 10.0)); op = clamp(op * pattern, 0.0, 0.8); float edgeFactor = 1.0 - smoothstep(0.30, 0.5, length(vUv - 0.5)); op *= edgeFactor; vec3 color = mix(baseColor, glowColor, smoothstep(0.15, 0.75, orderParameter)); gl_FragColor = vec4(color, op); }`,
@@ -217,9 +302,10 @@
 
         // --- UI Controls & Event Listeners ---
         const couplingSlider = document.getElementById('coupling');
-        const numBrainsSlider = document.getElementById('numBrains'); // "numBrains" ID kept for consistency, label changed
+        const numBrainsSlider = document.getElementById('numBrains');
         const simSpeedSlider = document.getElementById('simSpeed');
         const alphaCouplingSlider = document.getElementById('alphaCoupling');
+        const masterVolumeSlider = document.getElementById('masterVolume'); // Volume slider
         const resetButton = document.getElementById('resetButton'); 
         const startExperienceButton = document.getElementById('startExperienceButton');
         const introOverlay = document.getElementById('introOverlay');
@@ -233,7 +319,10 @@
         numBrainsSlider.addEventListener('input', (e) => { N = parseInt(e.target.value); numBrainsValueSpan.textContent = N; if (N > 0 && !animationPaused) { initParticles(); updateConnections(); } });
         simSpeedSlider.addEventListener('input', (e) => { SIMULATION_SPEED = parseFloat(e.target.value); simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); });
         alphaCouplingSlider.addEventListener('input', (e) => { ALPHA_COUPLING = parseFloat(e.target.value); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2); });
+        masterVolumeSlider.addEventListener('input', (e) => { if (masterGain) masterGain.gain.value = parseFloat(e.target.value); });
+        
         startExperienceButton.addEventListener('click', () => {
+            initAudio(); // Initialize AudioContext on first user gesture
             introOverlay.style.display = 'none'; animationPaused = false;
             if (N > 0) initParticles(); updateConnections(); animate(0);
         });
@@ -242,14 +331,17 @@
             K = 2.0; N = parseInt(numBrainsSlider.value); SIMULATION_SPEED = 0.3; ALPHA_COUPLING = 0.5;
             couplingSlider.value = K; simSpeedSlider.value = SIMULATION_SPEED; alphaCouplingSlider.value = ALPHA_COUPLING;
             couplingValueSpan.textContent = K.toFixed(1); simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2);
-            totalTime = 0; r_order = 0; 
+            totalTime = 0; r_order = 0; lastRNormalizedForChime = 0;
             document.getElementById('orderParameter').textContent = r_order.toFixed(3);
             if (N > 0 && !animationPaused) initParticles(); updateConnections();
-            updateResonanceStatusText(); // Update status on reset
+            updateResonanceStatusText(); 
         }
-        const tempColor = new THREE.Color(); // For HSL calculations
+        const tempColor = new THREE.Color(); 
 
         function updatePhases(deltaTimeEffective) {
+            // This function remains largely the same as the previous version.
+            // Visual updates to particles (color, position) happen here.
+            // ... (Copy from previous version)
             if (animationPaused || !phases || phases.length !== N || N === 0 || !particlesGeometry || !particlesGeometry.attributes.position) return;
             const earthPhase = (OMEGA_E * totalTime) % (2 * Math.PI);
             let sumCos = 0, sumSin = 0;
@@ -283,6 +375,9 @@
         }
 
         function updateConnections() {
+            // This function remains largely the same as the previous version.
+            // Line drawing logic.
+            // ... (Copy from previous version)
             if (animationPaused || !lineConnectionSystem || !particlesGeometry || !particlesGeometry.attributes.position || N === 0) { if(lineConnectionSystem) lineConnectionSystem.material.opacity = 0; return; }
             const lineVertices = []; let connectionsDrawn = 0;
             const particlePos = particlesGeometry.attributes.position.array;
@@ -314,7 +409,8 @@
         }
         
         function updateResonanceStatusText() {
-            if (animationPaused) {resonanceStatusEl.textContent = "System Paused. Click 'Run Simulation' in intro."; return;}
+            if (animationPaused && !audioCtx) {resonanceStatusEl.textContent = "Click 'Run Simulation' to begin."; return;}
+            if (animationPaused && audioCtx) {resonanceStatusEl.textContent = "Simulation Paused. (Audio might continue if started)"; return;} // More accurate if audio context exists but animation is paused.
             if (r_order < 0.15) resonanceStatusEl.textContent = "Low Coherence: Oscillators largely unsynchronized.";
             else if (r_order < 0.35) resonanceStatusEl.textContent = "Emerging Coherence: Partial phase-locking observed.";
             else if (r_order < 0.6) resonanceStatusEl.textContent = "Significant Coherence: Strong phase synchronization.";
@@ -330,14 +426,14 @@
             if(N > 0 && phases && phases.length > 0) { totalTime += effectiveDeltaTime; }
 
             if (earth) {
-                earth.rotation.y += EARTH_BASE_ROTATION_SPEED * SIMULATION_SPEED * 60 * deltaTime; // Consistent base rotation
+                earth.rotation.y += EARTH_BASE_ROTATION_SPEED * SIMULATION_SPEED * 60 * deltaTime; 
                 earth.material.emissiveIntensity = 0.3 + r_order * 0.4;
                 earth.material.opacity = 0.1 + r_order * 0.08;
             }
             if (aura) {
-                aura.rotation.y += (EARTH_BASE_ROTATION_SPEED * 1.5) * SIMULATION_SPEED * 60 * deltaTime; // Aura rotates a bit faster
+                aura.rotation.y += (EARTH_BASE_ROTATION_SPEED * 1.5) * SIMULATION_SPEED * 60 * deltaTime; 
                 aura.rotation.x += (EARTH_BASE_ROTATION_SPEED * 0.8) * SIMULATION_SPEED * 60 * deltaTime;
-                const pulse = 1 + 0.05 * Math.sin(totalTime * OMEGA_E * 0.2) * (1 + K * 0.01 + r_order * 1.5); // Pulse influence by r_order
+                const pulse = 1 + 0.05 * Math.sin(totalTime * OMEGA_E * 0.2) * (1 + K * 0.01 + r_order * 1.5); 
                 aura.scale.set(pulse, pulse, pulse);
                 aura.material.emissiveIntensity = 0.2 + r_order * 0.7;
                 aura.material.opacity = 0.03 + r_order * 0.15;
@@ -345,6 +441,8 @@
 
             if(N > 0 && phases && phases.length > 0) { updatePhases(effectiveDeltaTime); updateConnections(); } 
             else { updateConnections(); }
+
+            updateAudio(); // Update audio parameters based on simulation state
 
             document.getElementById('orderParameter').textContent = r_order.toFixed(3);
             updateResonanceStatusText();
@@ -356,14 +454,14 @@
             couplingValueSpan.textContent = K.toFixed(1); numBrainsValueSpan.textContent = N;
             simSpeedValueSpan.textContent = SIMULATION_SPEED.toFixed(2); alphaCouplingValueSpan.textContent = ALPHA_COUPLING.toFixed(2);
             resetButton.addEventListener('click', resetSimulation);
-            updateResonanceStatusText(); // Initial status text
+            updateResonanceStatusText(); 
         }
         init();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            if (composer) { composer.setSize(window.innerWidth, window.innerHeight); if (bloomPass && bloomPass.resolution) { bloomPass.resolution.set(window.innerWidth, window.innerHeight); } }
+            if (composer) { composer.setSize(window.innerWidth, window.innerHeight); if (bloom_pass && bloom_pass.resolution) { bloom_pass.resolution.set(window.innerWidth, window.innerHeight); } } // Fixed typo bloom_pass
         });
     </script>
 </body>
